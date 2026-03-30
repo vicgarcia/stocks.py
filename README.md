@@ -1,6 +1,8 @@
 # stocks.py
 
-A simple CLI for getting stock market data from Yahoo Finance.
+An agent skill for stock market data and charting, backed by a single-file CLI tool writen in python using data from Yahoo Finance. Enables AI agents to fetch real-time quotes with technical indicators, search for ticker symbols, retrieve historical OHLCV data, and generate publication-ready PNG charts.
+
+![Caterpillar 6-month chart](chart_example.png)
 
 ## Features
 
