@@ -12,10 +12,11 @@
 yfinance CLI - Stock market data and charting tool
 
 Commands:
-    quote   - Get stock quote with moving averages and signals
-    search  - Search for ticker symbols by company name
-    history - Get historical OHLCV data
-    chart   - Generate PNG chart with transparent background
+    quote           - Get stock quote with moving averages and signals
+    search          - Search for ticker symbols by company name
+    history         - Get historical OHLCV data
+    chart           - Generate PNG chart with transparent background
+    news            - Get latest news for a ticker or any search query
 """
 
 import argparse
@@ -492,6 +493,92 @@ def generate_chart(
     return f"Chart saved: {output}"
 
 
+# --- News Command ---
+
+def get_news(query: str, count: int = 5) -> Dict[str, Any]:
+    """Get news articles for a ticker symbol or general search query."""
+    try:
+        results = yf.Search(query, news_count=count).news
+    except Exception as e:
+        return {"error": f"News fetch failed: {str(e)}"}
+
+    if not results:
+        return {"query": query, "count": 0, "articles": []}
+
+    articles = []
+    for item in results[:count]:
+        source = item.get("publisher", "Unknown")
+
+        url = item.get("link", "")
+
+        pub_ts = item.get("providerPublishTime") or item.get("pubDate")
+        if isinstance(pub_ts, (int, float)):
+            try:
+                pub_date = datetime.fromtimestamp(pub_ts).strftime("%b %d %Y, %-I:%M %p")
+            except Exception:
+                pub_date = str(pub_ts)
+        else:
+            pub_date = str(pub_ts) if pub_ts else ""
+
+        articles.append({
+            "title": item.get("title", "No title"),
+            "summary": item.get("summary", ""),
+            "pub_date": pub_date,
+            "source": source,
+            "url": url,
+        })
+
+    return {"query": query, "count": len(articles), "articles": articles}
+
+
+def format_news(data: Dict[str, Any], full_summary: bool = False) -> str:
+    """Format news articles for display."""
+    if "error" in data:
+        return f"Error: {data['error']}"
+
+    query = data["query"]
+    count = data["count"]
+    sep = "=" * 60
+
+    lines = [
+        f"\n{query.upper()}  Latest News  ({count} articles)",
+        sep,
+    ]
+
+    if not data["articles"]:
+        lines.append("\n  No news articles found.")
+    else:
+        for i, article in enumerate(data["articles"], 1):
+            lines.append("")
+            lines.append(f"[{i}] {article['title']}")
+            lines.append(f"    {article['source']} · {article['pub_date']}")
+
+            summary = article.get("summary", "")
+            if summary:
+                if full_summary:
+                    # Wrap long summaries at ~72 chars
+                    words = summary.split()
+                    line_buf, wrapped = [], []
+                    for word in words:
+                        if sum(len(w) + 1 for w in line_buf) + len(word) > 72:
+                            wrapped.append("    " + " ".join(line_buf))
+                            line_buf = [word]
+                        else:
+                            line_buf.append(word)
+                    if line_buf:
+                        wrapped.append("    " + " ".join(line_buf))
+                    lines.extend(wrapped)
+                else:
+                    truncated = summary[:120] + "..." if len(summary) > 120 else summary
+                    lines.append(f"    {truncated}")
+
+            if article["url"]:
+                lines.append(f"    {article['url']}")
+
+    lines.append(f"\n{sep}\n")
+    return "\n".join(lines)
+
+
 # --- CLI Entry Point ---
 
 def main():
@@ -528,6 +615,12 @@ def main():
     chart_parser.add_argument("--ma", nargs="*", type=int, default=[20, 50, 200], help="Moving average periods (omit values to disable)")
     chart_parser.add_argument("--background", "-b", choices=["transparent", "white", "black"], default="transparent", help="Background color (default: transparent)")
 
+    # news command
+    news_parser = subparsers.add_parser("news", help="Get latest news for a ticker or search query")
+    news_parser.add_argument("query", help="Ticker symbol or search query (e.g., AAPL or 'oil prices')")
+    news_parser.add_argument("--count", "-n", type=int, default=5, help="Number of articles (default: 5)")
+    news_parser.add_argument("--summary", "-s", action="store_true", help="Show full summary paragraph")
+
     args = parser.parse_args()
 
     if args.command is None:
@@ -545,6 +638,10 @@ def main():
     elif args.command == "history":
         data = get_history(args.symbol, period=args.period, interval=args.interval)
         print(format_history(data))
+
+    elif args.command == "news":
+        data = get_news(args.query, count=args.count)
+        print(format_news(data, full_summary=args.summary))
 
     elif args.command == "chart":
         result = generate_chart(
