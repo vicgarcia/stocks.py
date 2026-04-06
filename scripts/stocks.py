@@ -17,6 +17,7 @@ Commands:
     history         - Get historical OHLCV data
     chart           - Generate PNG chart with transparent background
     news            - Get latest news for a ticker or any search query
+    recommendations - Analyst consensus and recent rating changes
 """
 
 import argparse
@@ -579,6 +580,159 @@ def format_news(data: Dict[str, Any], full_summary: bool = False) -> str:
     return "\n".join(lines)
 
 
+# --- Recommendations Command ---
+
+def get_recommendations(symbol: str, history_months: int = 3) -> Dict[str, Any]:
+    """Get analyst consensus and recent rating changes."""
+    ticker = yf.Ticker(symbol)
+
+    # Consensus summary (current + prior 2 months)
+    consensus_rows = []
+    try:
+        summary = ticker.recommendations_summary
+        if summary is not None and not summary.empty:
+            for _, row in summary.iterrows():
+                period = row.get("period", "")
+                strong_buy  = int(row.get("strongBuy",  0))
+                buy         = int(row.get("buy",        0))
+                hold        = int(row.get("hold",       0))
+                sell        = int(row.get("sell",       0))
+                strong_sell = int(row.get("strongSell", 0))
+                total = strong_buy + buy + hold + sell + strong_sell
+                if total > 0:
+                    bull_pct = (strong_buy + buy) / total
+                    bear_pct = (strong_sell + sell) / total
+                    if bull_pct > 0.60:
+                        label = "BUY"
+                    elif bear_pct > 0.20:
+                        label = "SELL"
+                    else:
+                        label = "HOLD/MIXED"
+                else:
+                    label = "N/A"
+                consensus_rows.append({
+                    "period": period,
+                    "strong_buy": strong_buy,
+                    "buy": buy,
+                    "hold": hold,
+                    "sell": sell,
+                    "strong_sell": strong_sell,
+                    "total": total,
+                    "label": label,
+                })
+    except Exception:
+        pass
+
+    # Upgrades/downgrades
+    rating_changes = []
+    try:
+        ud = ticker.upgrades_downgrades
+        if ud is not None and not ud.empty:
+            # Filter to requested months window
+            cutoff = pd.Timestamp.now() - pd.DateOffset(months=history_months)
+            ud = ud[ud.index >= cutoff]
+            ud = ud.sort_index(ascending=False)
+
+            for date, row in ud.iterrows():
+                firm        = row.get("Firm", "")
+                from_grade  = row.get("FromGrade", "")
+                to_grade    = row.get("ToGrade", "")
+                action      = row.get("Action", "")
+                curr_pt     = row.get("CurrentPriceTarget") or row.get("currentPriceTarget")
+                prior_pt    = row.get("PriorPriceTarget") or row.get("priorPriceTarget")
+
+                # Price target annotation
+                if curr_pt and prior_pt and curr_pt != prior_pt:
+                    try:
+                        direction = "↑" if float(curr_pt) > float(prior_pt) else "↓"
+                        pt_note = f"${float(curr_pt):.0f}  {direction} from ${float(prior_pt):.0f}"
+                    except (ValueError, TypeError):
+                        pt_note = f"${curr_pt}"
+                elif curr_pt:
+                    try:
+                        pt_note = f"${float(curr_pt):.0f}"
+                    except (ValueError, TypeError):
+                        pt_note = str(curr_pt)
+                else:
+                    pt_note = ""
+
+                # Action label
+                action_lower = str(action).lower()
+                if "up" in action_lower:
+                    action_label = "↑ upgraded"
+                elif "down" in action_lower:
+                    action_label = "↓ downgraded"
+                else:
+                    action_label = "(maintains)"
+
+                rating_changes.append({
+                    "date": date.strftime("%b %d"),
+                    "firm": firm,
+                    "from_grade": from_grade,
+                    "to_grade": to_grade,
+                    "action_label": action_label,
+                    "pt_note": pt_note,
+                })
+    except Exception:
+        pass
+
+    return {
+        "symbol": symbol.upper(),
+        "consensus": consensus_rows,
+        "rating_changes": rating_changes,
+        "history_months": history_months,
+    }
+
+
+def format_recommendations(data: Dict[str, Any]) -> str:
+    """Format analyst consensus and rating changes for display."""
+    symbol = data["symbol"]
+    sep = "=" * 60
+
+    lines = [
+        f"\n{symbol}  Analyst Consensus",
+        sep,
+    ]
+
+    # Consensus table
+    if data["consensus"]:
+        lines.append("")
+        lines.append("  CONSENSUS BREAKDOWN")
+        lines.append("")
+        lines.append(f"  {'Period':<10} {'Strong Buy':>10} {'Buy':>5} {'Hold':>6} {'Sell':>6} {'Strong Sell':>12} {'Total':>7}    Verdict")
+        lines.append(f"  {'-'*10} {'-'*10} {'-'*5} {'-'*6} {'-'*6} {'-'*12} {'-'*7}    {'-'*10}")
+
+        period_labels = {"0m": "Now", "-1m": "-1 Month", "-2m": "-2 Months"}
+        for row in data["consensus"]:
+            label = period_labels.get(row["period"], row["period"])
+            lines.append(
+                f"  {label:<10} {row['strong_buy']:>10} {row['buy']:>5} {row['hold']:>6}"
+                f" {row['sell']:>6} {row['strong_sell']:>12} {row['total']:>7}    → {row['label']}"
+            )
+    else:
+        lines.append("\n  No consensus data available.")
+
+    # Rating changes
+    lines.append("")
+    lines.append(f"  RECENT RATING CHANGES  (last {data['history_months']} months)")
+    lines.append("")
+
+    if data["rating_changes"]:
+        for chg in data["rating_changes"]:
+            from_g = chg["from_grade"] or "—"
+            to_g   = chg["to_grade"]   or "—"
+            grade_str = f"{from_g:<18} →  {to_g:<18}"
+            pt = f"  {chg['pt_note']}" if chg["pt_note"] else ""
+            lines.append(
+                f"  {chg['date']:<8} {chg['firm']:<22} {grade_str}{pt}  {chg['action_label']}"
+            )
+    else:
+        lines.append("  No rating changes found in this period.")
+
+    lines.append(f"\n{sep}\n")
+    return "\n".join(lines)
+
+
 # --- CLI Entry Point ---
 
 def main():
@@ -615,6 +769,11 @@ def main():
     chart_parser.add_argument("--ma", nargs="*", type=int, default=[20, 50, 200], help="Moving average periods (omit values to disable)")
     chart_parser.add_argument("--background", "-b", choices=["transparent", "white", "black"], default="transparent", help="Background color (default: transparent)")
 
+    # recommendations command
+    rec_parser = subparsers.add_parser("recommendations", help="Analyst consensus and recent rating changes")
+    rec_parser.add_argument("symbol", help="Stock ticker symbol (e.g., AAPL)")
+    rec_parser.add_argument("--history", "-H", type=int, default=3, help="Months of rating history to show (default: 3)")
+
     # news command
     news_parser = subparsers.add_parser("news", help="Get latest news for a ticker or search query")
     news_parser.add_argument("query", help="Ticker symbol or search query (e.g., AAPL or 'oil prices')")
@@ -638,6 +797,10 @@ def main():
     elif args.command == "history":
         data = get_history(args.symbol, period=args.period, interval=args.interval)
         print(format_history(data))
+
+    elif args.command == "recommendations":
+        data = get_recommendations(args.symbol, history_months=args.history)
+        print(format_recommendations(data))
 
     elif args.command == "news":
         data = get_news(args.query, count=args.count)
