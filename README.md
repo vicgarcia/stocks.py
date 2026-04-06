@@ -1,6 +1,6 @@
 # stocks.py
 
-An agent skill for stock market data and charting, backed by a single-file CLI tool writen in python using data from Yahoo Finance. Enables AI agents to fetch real-time quotes with technical indicators, search for ticker symbols, retrieve historical OHLCV data, and generate publication-ready PNG charts.
+An agent skill for stock market data and analysis, backed by a single-file CLI tool written in Python using data from Yahoo Finance. Enables AI agents to fetch real-time quotes with technical indicators, search for ticker symbols, retrieve news, surface analyst recommendations, score fundamental health, retrieve historical OHLCV data, and generate publication-ready PNG charts.
 
 ![Caterpillar 6-month chart](https://raw.githubusercontent.com/vicgarcia/stocks.py/main/chart_example.png)
 
@@ -10,6 +10,9 @@ An agent skill for stock market data and charting, backed by a single-file CLI t
 - **Stock quotes** - Price, valuation metrics, volume, sector, and more
 - **Moving averages** - SMA (20/50/200-day) and EMA (9/21-day) with position analysis
 - **Trading signals** - Golden Cross, Death Cross, trend alignment, EMA crossovers
+- **News** - Latest articles for any ticker or free-text market topic
+- **Analyst recommendations** - Consensus breakdown and per-firm rating changes with price targets
+- **Fundamental health score** - 0–100 scored report across four pillars: Profitability, Growth, Financial Health, Cash Generation
 - **Ticker search** - Find symbols by company name
 - **Historical data** - OHLCV data with configurable periods and intervals
 - **PNG charts** - Candlestick and line charts with transparent/white/black backgrounds
@@ -47,10 +50,73 @@ Install in Claude Desktop as a skill.
 |---------|-------------|
 | `quote` | Get stock quote with moving averages |
 | `search` | Search for ticker symbols by company name |
+| `news` | Latest news articles for a ticker or any search topic |
+| `recommendations` | Analyst consensus and recent rating changes |
+| `fundamentals` | Four-pillar fundamental health score (0–100) |
 | `history` | Get historical OHLCV data |
 | `chart` | Generate PNG chart |
 
 ## Usage
+
+### News
+
+```bash
+# News for a specific ticker
+stocks.py news AAPL
+stocks.py news TSLA --count 10
+
+# General market or topic news
+stocks.py news "oil prices"
+stocks.py news "Federal Reserve interest rates"
+stocks.py news "semiconductor tariffs"
+
+# Show full article summaries
+stocks.py news NVDA --summary
+stocks.py news "AI chips" -s -n 3
+```
+
+Output includes headline, publisher, timestamp, and URL for each article. Add `--summary` to show the full article summary paragraph.
+
+### Analyst Recommendations
+
+```bash
+# Current consensus + last 3 months of rating changes
+stocks.py recommendations AAPL
+
+# Extended history
+stocks.py recommendations TSLA --history 6
+stocks.py recommendations NVDA -H 1
+```
+
+Output includes:
+- **Consensus breakdown** — strongBuy / buy / hold / sell / strongSell counts for current month and prior two months, with BUY / HOLD/MIXED / SELL verdict
+- **Rating changes** — per-firm actions with grade transitions, price targets, and direction arrows
+
+Verdict logic: `strongBuy + buy > 60%` → BUY · `strongSell + sell > 20%` → SELL · otherwise HOLD/MIXED
+
+### Fundamental Health Score
+
+```bash
+# Full scored report
+stocks.py fundamentals AAPL
+
+# Raw numbers table without scoring
+stocks.py fundamentals GOOGL --raw
+
+# JSON output for agents/LLMs
+stocks.py fundamentals META --json
+```
+
+Produces a **0–100 Health Score** from four pillars (0–25 each):
+
+| Pillar | Key Metrics |
+|--------|-------------|
+| Profitability | Gross / Net / Operating Margin (TTM), Margin Trend vs 3yr avg |
+| Growth | Revenue CAGR (3yr), Net Income CAGR (3yr), YoY Acceleration |
+| Financial Health | Debt-to-Equity, Current Ratio, Debt Trend |
+| Cash Generation | FCF Margin (TTM), FCF Consistency (3yr), FCF Quality (FCF/NI) |
+
+Each metric displays a `●●●●○` dot meter. Full-score thresholds: Gross Margin ≥ 50%, Net/Op Margins ≥ 20/25%, CAGR ≥ 15%, D/E ≤ 0.5, Current Ratio ≥ 2.0, FCF Margin ≥ 20%.
 
 ### Stock Quote
 
@@ -117,6 +183,29 @@ stocks.py chart AMD --period 1y --width 1400 --height 900 --ma 20 50 200 --outpu
 
 ## Command Options
 
+### News Command
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `query` | required | Ticker symbol or any search query string |
+| `--count`, `-n` | 5 | Number of articles to return |
+| `--summary`, `-s` | off | Show full summary paragraph |
+
+### Recommendations Command
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `symbol` | required | Stock ticker symbol |
+| `--history`, `-H` | 3 | Months of rating change history to show |
+
+### Fundamentals Command
+
+| Option | Description |
+|--------|-------------|
+| `symbol` | Stock ticker symbol (required) |
+| `--raw` | Print underlying numbers table without scoring |
+| `--json` | Output as JSON for agent/LLM consumption |
+
 ### Quote Command
 
 | Option | Description |
@@ -151,6 +240,23 @@ stocks.py chart AMD --period 1y --width 1400 --height 900 --ma 20 50 200 --outpu
 | `--height` | 800 | Height in pixels |
 | `--ma` | 20 50 200 | Moving average periods |
 | `--background`, `-b` | transparent | Background: transparent, white, black |
+
+## Agent Analysis Stack
+
+The three analysis commands form a layered stack designed for agent workflows:
+
+```bash
+# 1. Fundamentals — Is the business healthy? (objective, backward-looking)
+stocks.py fundamentals AAPL --json
+
+# 2. Recommendations — What do analysts think? (forward-looking consensus)
+stocks.py recommendations AAPL
+
+# 3. News — What is happening right now? (real-time context)
+stocks.py news AAPL --count 10
+```
+
+With `--json` on `fundamentals`, an agent can run all three for any ticker, combine the outputs, and produce a structured investment thesis. The `fundamentals` score also enables screening — run against a list of tickers and rank by health score to surface candidates worth deeper analysis.
 
 ## Moving Averages
 
