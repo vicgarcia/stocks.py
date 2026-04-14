@@ -1,14 +1,109 @@
 ---
 name: stocks
 description: Get stock market data from Yahoo Finance. Use when the user asks about stock prices, quotes, company valuations, moving averages, trading signals, historical data, stock charts, latest news, analyst recommendations, or fundamental health scores. Supports any publicly traded stock via ticker symbol.
-compatibility: Requires 'stocks.py' script in PATH.
+compatibility: Requires uv or stocks.py in PATH.
 ---
 
 # Stock Market Data Tool
 
 Get stock quotes, news, analyst recommendations, fundamental health scores, historical data, and charts using the `stocks.py` CLI powered by Yahoo Finance.
 
+## Invocation
+
+If `stocks.py` is installed in PATH:
+```bash
+stocks.py <command> [args]
+```
+
+Or run directly without installing:
+```bash
+uv run --script /path/to/skill/scripts/stocks.py <command> [args]
+```
+
+Examples in this document use `stocks.py` as shorthand for either invocation form above.
+
 ## Commands Reference
+
+### Stock Quote
+```bash
+stocks.py quote AAPL
+stocks.py quote TSLA --signals
+stocks.py quote MSFT -s
+```
+
+Returns:
+- Current price
+- Market cap
+- P/E ratio (trailing and forward)
+- Dividend yield
+- 52-week high/low
+- Volume (current and average)
+- Beta
+- Sector and industry
+- Moving averages (SMA 20/50/200, EMA 9/21)
+- Position relative to each MA (above/below with % distance)
+
+### Quote with Trading Signals
+```bash
+stocks.py quote NVDA --signals
+stocks.py quote AMD -s
+```
+
+Additional signal data includes:
+- Trend alignment (strong bullish/bearish/mixed)
+- Recommendation (consider_buy/avoid_or_sell/wait)
+- Detected signals:
+  - Golden Cross (50-day crosses above 200-day SMA)
+  - Death Cross (50-day crosses below 200-day SMA)
+  - Bullish/Bearish alignment (price > MA20 > MA50 > MA200)
+  - EMA crossovers (9-day EMA crosses 21-day EMA)
+
+### Generate Charts
+```bash
+# Default: 6-month candlestick, no moving averages
+stocks.py chart AAPL
+
+# Line chart
+stocks.py chart TSLA --type line
+
+# Custom period
+stocks.py chart MSFT --period 1y
+
+# White background (good for documents)
+stocks.py chart NVDA --background white
+
+# Black background (good for dark themes)
+stocks.py chart AMD --background black
+
+# Custom dimensions
+stocks.py chart GOOGL --width 1600 --height 1000
+
+# Custom moving averages
+stocks.py chart META --ma 9 21 50
+
+# Full options
+stocks.py chart AAPL --period 1y --type candlestick --background white --width 1400 --height 900 --ma 20 50 200 --output aapl_chart.png
+```
+
+Chart features:
+- Candlestick or line chart types
+- Moving average overlays (customizable periods)
+- Volume subplot (candlestick mode)
+- Transparent, white, or black backgrounds
+- Auto-contrasting colors for each background
+
+### Search for Tickers
+```bash
+stocks.py search "Apple"
+stocks.py search "electric vehicles" --limit 10
+stocks.py search "semiconductor" -l 8
+```
+
+Returns:
+- Ticker symbol
+- Company name
+- Exchange
+- Quote type (EQUITY, ETF, etc.)
 
 ### Latest News
 ```bash
@@ -39,30 +134,28 @@ Options:
 | `--count`, `-n` | 5 | Number of articles to return |
 | `--summary`, `-s` | off | Show full summary paragraph |
 
-### Analyst Recommendations
+### Historical Data
 ```bash
-# Current consensus + recent rating changes
-stocks.py recommendations AAPL
+# Default: 1 month of daily data
+stocks.py history AAPL
 
-# Extended history
-stocks.py recommendations TSLA --history 6
-stocks.py recommendations NVDA -H 1
+# 1 year of daily data
+stocks.py history TSLA --period 1y
+
+# 3 months of weekly data
+stocks.py history MSFT --period 3mo --interval 1wk
+
+# 5 days of hourly data
+stocks.py history NVDA --period 5d --interval 1h
 ```
 
-Returns:
-- **Consensus breakdown** — strongBuy / buy / hold / sell / strongSell counts for current month and prior 2 months, with BUY / HOLD/MIXED / SELL verdict
-- **Recent rating changes** — per-firm actions with FromGrade → ToGrade, price targets with direction arrows, and action label (upgraded / downgraded / maintains)
+Period options: `1d`, `5d`, `1mo`, `3mo`, `6mo`, `1y`, `2y`, `5y`, `max`
+Interval options: `1m`, `5m`, `15m`, `1h`, `1d`, `1wk`, `1mo`
 
-Consensus verdict logic:
-- `strongBuy + buy > 60%` of total → **BUY**
-- `strongSell + sell > 20%` of total → **SELL**
-- Otherwise → **HOLD/MIXED**
-
-Options:
-| Option | Default | Description |
-|--------|---------|-------------|
-| `symbol` | required | Stock ticker symbol |
-| `--history`, `-H` | 3 | Months of rating change history to show |
+Returns OHLCV data:
+- Date
+- Open, High, Low, Close prices
+- Volume
 
 ### Fundamental Health Score
 ```bash
@@ -100,109 +193,30 @@ Options:
 | `--raw` | Print underlying numbers table without scoring |
 | `--json` | Output everything as JSON for agent/LLM consumption |
 
-### Stock Quote
+### Analyst Recommendations
 ```bash
-stocks.py quote AAPL
-stocks.py quote TSLA --signals
-stocks.py quote MSFT -s
+# Current consensus + recent rating changes
+stocks.py recommendations AAPL
+
+# Extended history
+stocks.py recommendations TSLA --history 6
+stocks.py recommendations NVDA -H 1
 ```
 
 Returns:
-- Current price
-- Market cap
-- P/E ratio (trailing and forward)
-- Dividend yield
-- 52-week high/low
-- Volume (current and average)
-- Beta
-- Sector and industry
-- Moving averages (SMA 20/50/200, EMA 9/21)
-- Position relative to each MA (above/below with % distance)
+- **Consensus breakdown** — strongBuy / buy / hold / sell / strongSell counts for current month and prior 2 months, with BUY / HOLD/MIXED / SELL verdict
+- **Recent rating changes** — per-firm actions with FromGrade → ToGrade, price targets with direction arrows, and action label (upgraded / downgraded / maintains)
 
-### Quote with Trading Signals
-```bash
-stocks.py quote NVDA --signals
-stocks.py quote AMD -s
-```
+Consensus verdict logic:
+- `strongBuy + buy > 60%` of total → **BUY**
+- `strongSell + sell > 20%` of total → **SELL**
+- Otherwise → **HOLD/MIXED**
 
-Additional signal data includes:
-- Trend alignment (strong bullish/bearish/mixed)
-- Recommendation (consider_buy/avoid_or_sell/wait)
-- Detected signals:
-  - Golden Cross (50-day crosses above 200-day SMA)
-  - Death Cross (50-day crosses below 200-day SMA)
-  - Bullish/Bearish alignment (price > MA20 > MA50 > MA200)
-  - EMA crossovers (9-day EMA crosses 21-day EMA)
-
-### Search for Tickers
-```bash
-stocks.py search "Apple"
-stocks.py search "electric vehicles" --limit 10
-stocks.py search "semiconductor" -l 8
-```
-
-Returns:
-- Ticker symbol
-- Company name
-- Exchange
-- Quote type (EQUITY, ETF, etc.)
-
-### Historical Data
-```bash
-# Default: 1 month of daily data
-stocks.py history AAPL
-
-# 1 year of daily data
-stocks.py history TSLA --period 1y
-
-# 3 months of weekly data
-stocks.py history MSFT --period 3mo --interval 1wk
-
-# 5 days of hourly data
-stocks.py history NVDA --period 5d --interval 1h
-```
-
-Period options: `1d`, `5d`, `1mo`, `3mo`, `6mo`, `1y`, `2y`, `5y`, `max`
-Interval options: `1m`, `5m`, `15m`, `1h`, `1d`, `1wk`, `1mo`
-
-Returns OHLCV data:
-- Date
-- Open, High, Low, Close prices
-- Volume
-
-### Generate Charts
-```bash
-# Default: 6-month candlestick with transparent background
-stocks.py chart AAPL
-
-# Line chart
-stocks.py chart TSLA --type line
-
-# Custom period
-stocks.py chart MSFT --period 1y
-
-# White background (good for documents)
-stocks.py chart NVDA --background white
-
-# Black background (good for dark themes)
-stocks.py chart AMD --background black
-
-# Custom dimensions
-stocks.py chart GOOGL --width 1600 --height 1000
-
-# Custom moving averages
-stocks.py chart META --ma 9 21 50
-
-# Full options
-stocks.py chart AAPL --period 1y --type candlestick --background white --width 1400 --height 900 --ma 20 50 200 --output aapl_chart.png
-```
-
-Chart features:
-- Candlestick or line chart types
-- Moving average overlays (customizable periods)
-- Volume subplot (candlestick mode)
-- Transparent, white, or black backgrounds
-- Auto-contrasting colors for each background
+Options:
+| Option | Default | Description |
+|--------|---------|-------------|
+| `symbol` | required | Stock ticker symbol |
+| `--history`, `-H` | 3 | Months of rating change history to show |
 
 ## Example Workflows
 
