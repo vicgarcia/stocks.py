@@ -1,11 +1,11 @@
-# CLAUDE.md — yfinance.py
+# CLAUDE.md — stocks.py
 
 ## Project Overview
 
-`yfinance.py` is a single-file CLI tool for stock market data, backed by Yahoo Finance via the `yfinance` library. It is also packaged as an **agent skill** — a self-contained, documented tool that AI agents can call directly as a subprocess.
+`stocks.py` is a single-file CLI tool for stock market data, backed by Yahoo Finance via the `yfinance` library. It is also packaged as an **agent skill** — a self-contained, documented tool that AI agents can call directly as a subprocess.
 
 The project has two distinct consumers:
-- **Human users** running `yfinance.py <command>` directly from the terminal
+- **Human users** running `stocks.py <command>` directly from the terminal
 - **AI agents** reading `SKILL.md` to understand available commands, then running them as subprocesses and parsing stdout
 
 ---
@@ -13,9 +13,9 @@ The project has two distinct consumers:
 ## Repository Layout
 
 ```
-yfinance.py/
+stocks.py/
 ├── scripts/
-│   └── yfinance.py        # The entire CLI — single file, all commands
+│   └── stocks.py          # The entire CLI — single file, all commands
 ├── SKILL.md             # Agent-facing reference (commands, options, output semantics)
 ├── README.md            # Human-facing docs (installation, usage, examples)
 └── CLAUDE.md            # This file
@@ -23,7 +23,7 @@ yfinance.py/
 
 ---
 
-## The CLI Tool (`scripts/yfinance.py`)
+## The CLI Tool (`scripts/stocks.py`)
 
 ### Execution Model
 
@@ -42,7 +42,7 @@ Uses the `uv run --script` shebang pattern (PEP 723) with inline dependency decl
 # ///
 ```
 
-Run directly: `uv run --script scripts/yfinance.py <command>` or, if installed in PATH, `yfinance.py <command>`.
+Run directly: `uv run --script scripts/stocks.py <command>` or, if installed in PATH, `stocks.py <command>`.
 
 ### Code Structure
 
@@ -176,9 +176,9 @@ All metrics scale linearly from 0 to their threshold. Negative values (losses, n
 These three commands form the core analysis stack for an agent:
 
 ```bash
-yfinance.py fundamentals <TICKER> --json   # Objective business quality signal
-yfinance.py recommendations <TICKER>       # Forward-looking analyst sentiment
-yfinance.py news <TICKER|TOPIC>            # Real-time context
+stocks.py fundamentals <TICKER> --json   # Objective business quality signal
+stocks.py recommendations <TICKER>       # Forward-looking analyst sentiment
+stocks.py news <TICKER|TOPIC>            # Real-time context
 ```
 
 The `--json` flag on `fundamentals` outputs a structured dict with `total_score`, all four pillar scores, and per-metric values — suitable for passing directly to an LLM prompt. The score (0–100) also enables ranking: run across a list of tickers and sort by `total_score` to screen candidates.

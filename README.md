@@ -1,8 +1,8 @@
-# yfinance.py
+# stocks.py
 
-An agent skill for stock market data and analysis, backed by a single-file CLI tool written in Python using data from Yahoo Finance. Enables AI agents to fetch real-time quotes with technical indicators, search for ticker symbols, retrieve news, surface analyst recommendations, score fundamental health, retrieve historical OHLCV data, and generate publication-ready PNG charts.
+An agent skill for stock market data and analysis, backed by a single-file CLI tool written in Python powered by Yahoo Finance and the [yfinance](https://github.com/ranaroussi/yfinance) Python library. Enables AI agents to fetch real-time quotes with technical indicators, search for ticker symbols, retrieve news, surface analyst recommendations, score fundamental health, retrieve historical OHLCV data, and generate publication-ready PNG charts.
 
-![Caterpillar 6-month chart](https://raw.githubusercontent.com/vicgarcia/yfinance.py/main/chart_example.png)
+![Caterpillar 6-month chart](https://raw.githubusercontent.com/vicgarcia/stocks.py/main/chart_example.png)
 
 ## Features
 
@@ -28,20 +28,20 @@ An agent skill for stock market data and analysis, backed by a single-file CLI t
 
 ```bash
 # Clone the repo
-git clone https://github.com/vicgarcia/yfinance.py
+git clone https://github.com/vicgarcia/stocks.py
 
 # Run directly (dependencies auto-installed)
-uv run --script scripts/yfinance.py --help
+uv run --script scripts/stocks.py --help
 
 # Install in PATH
-cp scripts/yfinance.py ~/.local/bin/yfinance.py
-chmod +x ~/.local/bin/yfinance.py
-yfinance.py --help
+cp scripts/stocks.py ~/.local/bin/stocks.py
+chmod +x ~/.local/bin/stocks.py
+stocks.py --help
 ```
 
 ### Install for Claude Desktop
 
-Download `yfinance-v*.zip` from [Releases](https://github.com/vicgarcia/yfinance.py/releases).
+Download `stocks-v*.zip` from [Releases](https://github.com/vicgarcia/stocks.py/releases).
 Install in Claude Desktop as a skill.
 
 ## Commands
@@ -62,17 +62,17 @@ Install in Claude Desktop as a skill.
 
 ```bash
 # News for a specific ticker
-yfinance.py news AAPL
-yfinance.py news TSLA --count 10
+stocks.py news AAPL
+stocks.py news TSLA --count 10
 
 # General market or topic news
-yfinance.py news "oil prices"
-yfinance.py news "Federal Reserve interest rates"
-yfinance.py news "semiconductor tariffs"
+stocks.py news "oil prices"
+stocks.py news "Federal Reserve interest rates"
+stocks.py news "semiconductor tariffs"
 
 # Show full article summaries
-yfinance.py news NVDA --summary
-yfinance.py news "AI chips" -s -n 3
+stocks.py news NVDA --summary
+stocks.py news "AI chips" -s -n 3
 ```
 
 Output includes headline, publisher, timestamp, and URL for each article. Add `--summary` to show the full article summary paragraph.
@@ -81,11 +81,11 @@ Output includes headline, publisher, timestamp, and URL for each article. Add `-
 
 ```bash
 # Current consensus + last 3 months of rating changes
-yfinance.py recommendations AAPL
+stocks.py recommendations AAPL
 
 # Extended history
-yfinance.py recommendations TSLA --history 6
-yfinance.py recommendations NVDA -H 1
+stocks.py recommendations TSLA --history 6
+stocks.py recommendations NVDA -H 1
 ```
 
 Output includes:
@@ -98,13 +98,13 @@ Verdict logic: `strongBuy + buy > 60%` → BUY · `strongSell + sell > 20%` → 
 
 ```bash
 # Full scored report
-yfinance.py fundamentals AAPL
+stocks.py fundamentals AAPL
 
 # Raw numbers table without scoring
-yfinance.py fundamentals GOOGL --raw
+stocks.py fundamentals GOOGL --raw
 
 # JSON output for agents/LLMs
-yfinance.py fundamentals META --json
+stocks.py fundamentals META --json
 ```
 
 Produces a **0–100 Health Score** from four pillars (0–25 each):
@@ -122,11 +122,11 @@ Each metric displays a `●●●●○` dot meter. Full-score thresholds: Gross
 
 ```bash
 # Basic quote
-yfinance.py quote AAPL
+stocks.py quote AAPL
 
 # With trading signals
-yfinance.py quote TSLA --signals
-yfinance.py quote NVDA -s
+stocks.py quote TSLA --signals
+stocks.py quote NVDA -s
 ```
 
 Output includes:
@@ -143,42 +143,42 @@ Output includes:
 
 ```bash
 # Search by company name
-yfinance.py search "Apple"
-yfinance.py search "electric vehicles"
+stocks.py search "Apple"
+stocks.py search "electric vehicles"
 
 # Limit results
-yfinance.py search "semiconductor" --limit 10
+stocks.py search "semiconductor" --limit 10
 ```
 
 ### Historical Data
 
 ```bash
 # Default: 1 month daily
-yfinance.py history AAPL
+stocks.py history AAPL
 
 # Custom period and interval
-yfinance.py history TSLA --period 1y --interval 1d
-yfinance.py history MSFT --period 3mo --interval 1wk
-yfinance.py history NVDA --period 5d --interval 1h
+stocks.py history TSLA --period 1y --interval 1d
+stocks.py history MSFT --period 3mo --interval 1wk
+stocks.py history NVDA --period 5d --interval 1h
 ```
 
 ### Generate Charts
 
 ```bash
 # Default: 6-month candlestick, transparent background
-yfinance.py chart AAPL
+stocks.py chart AAPL
 
 # White background
-yfinance.py chart TSLA --background white
+stocks.py chart TSLA --background white
 
 # Black background
-yfinance.py chart MSFT --background black
+stocks.py chart MSFT --background black
 
 # Line chart
-yfinance.py chart NVDA --type line
+stocks.py chart NVDA --type line
 
 # Custom options
-yfinance.py chart AMD --period 1y --width 1400 --height 900 --ma 20 50 200 --output amd.png
+stocks.py chart AMD --period 1y --width 1400 --height 900 --ma 20 50 200 --output amd.png
 ```
 
 ## Command Options
@@ -247,13 +247,13 @@ The three analysis commands form a layered stack designed for agent workflows:
 
 ```bash
 # 1. Fundamentals — Is the business healthy? (objective, backward-looking)
-yfinance.py fundamentals AAPL --json
+stocks.py fundamentals AAPL --json
 
 # 2. Recommendations — What do analysts think? (forward-looking consensus)
-yfinance.py recommendations AAPL
+stocks.py recommendations AAPL
 
 # 3. News — What is happening right now? (real-time context)
-yfinance.py news AAPL --count 10
+stocks.py news AAPL --count 10
 ```
 
 With `--json` on `fundamentals`, an agent can run all three for any ticker, combine the outputs, and produce a structured investment thesis. The `fundamentals` score also enables screening — run against a list of tickers and rank by health score to surface candidates worth deeper analysis.
@@ -286,15 +286,15 @@ This project includes a `SKILL.md` file for use with AI coding agents.
 
 ```bash
 # Create skills directory
-mkdir -p /path/to/agent/skills/yfinance
+mkdir -p /path/to/agent/skills/stocks
 
 # Copy skill files
-cp SKILL.md /path/to/agent/skills/yfinance/
-cp -r scripts/ /path/to/agent/skills/yfinance/
+cp SKILL.md /path/to/agent/skills/stocks/
+cp -r scripts/ /path/to/agent/skills/stocks/
 
-# Ensure yfinance.py is in PATH
-cp scripts/yfinance.py ~/.local/bin/
-chmod +x ~/.local/bin/yfinance.py
+# Ensure stocks.py is in PATH
+cp scripts/stocks.py ~/.local/bin/
+chmod +x ~/.local/bin/stocks.py
 ```
 
 The agent reads `SKILL.md` to understand available commands, parameters, and how to interpret stock data.
