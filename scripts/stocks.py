@@ -1163,7 +1163,7 @@ def main():
     chart_parser.add_argument("--output", "-o", help="Output file path")
     chart_parser.add_argument("--width", type=int, default=1200, help="Width in pixels (default: 1200)")
     chart_parser.add_argument("--height", type=int, default=800, help="Height in pixels (default: 800)")
-    chart_parser.add_argument("--ma", nargs="*", type=int, default=[20, 50, 200], help="Moving average periods (omit values to disable)")
+    chart_parser.add_argument("--ma", nargs="+", type=int, default=[], help="Moving average periods to overlay (e.g. --ma 20 50 200)")
     chart_parser.add_argument("--background", "-b", choices=["transparent", "white", "black"], default="transparent", help="Background color (default: transparent)")
 
     # fundamentals command
