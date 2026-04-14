@@ -328,6 +328,7 @@ def format_history(data: Dict[str, Any]) -> str:
 def generate_chart(
     symbol: str,
     period: str = "6mo",
+    interval: str = "1d",
     chart_type: str = "candlestick",
     output: Optional[str] = None,
     width: int = 1200,
@@ -345,10 +346,19 @@ def generate_chart(
         ma_periods = [20, 50, 200]
 
     ticker = yf.Ticker(symbol)
-    hist = ticker.history(period=period)
+    hist = ticker.history(period=period, interval=interval)
 
     if hist.empty:
         return f"Error: No data found for {symbol}"
+
+    # Detect intraday data and compute bar width + date format accordingly
+    if len(hist) > 1:
+        bar_delta_days = (hist.index[1] - hist.index[0]).total_seconds() / 86400
+    else:
+        bar_delta_days = 1.0
+    bar_width = bar_delta_days * 0.8
+    is_intraday = bar_delta_days < 1.0
+    date_fmt = mdates.DateFormatter("%H:%M") if is_intraday else date_fmt
 
     # Color schemes based on background
     if background == "black":
@@ -431,17 +441,17 @@ def generate_chart(
             # Body
             body_bottom = min(open_price, close_price)
             body_height = abs(close_price - open_price)
-            ax1.bar(date, body_height, bottom=body_bottom, width=0.6, color=color, edgecolor=color)
+            ax1.bar(date, body_height, bottom=body_bottom, width=bar_width, color=color, edgecolor=color)
 
         # Volume bars
         volume_colors = [
             colors["volume_up"] if hist["Close"].iloc[i] >= hist["Open"].iloc[i] else colors["volume_down"]
             for i in range(len(hist))
         ]
-        ax2.bar(mdates.date2num(hist.index), hist["Volume"], width=0.6, color=volume_colors, alpha=0.7)
+        ax2.bar(mdates.date2num(hist.index), hist["Volume"], width=bar_width, color=volume_colors, alpha=0.7)
         ax2.set_ylabel("Volume", color=colors["text"])
         ax2.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f"{x/1e6:.1f}M"))
-        ax2.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
+        ax2.xaxis.set_major_formatter(date_fmt)
         ax2.xaxis.set_major_locator(mdates.AutoDateLocator())
         ax2.tick_params(colors=colors["text"])
         ax2.grid(True, alpha=0.3, color=colors["grid"])
@@ -474,7 +484,7 @@ def generate_chart(
     handles, _ = ax1.get_legend_handles_labels()
     if handles:
         ax1.legend(loc="upper left", framealpha=0.8)
-    ax1.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
+    ax1.xaxis.set_major_formatter(date_fmt)
     ax1.xaxis.set_major_locator(mdates.AutoDateLocator())
 
     plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45, ha="right", color=colors["text"])
@@ -1159,6 +1169,7 @@ def main():
     chart_parser = subparsers.add_parser("chart", help="Generate PNG chart")
     chart_parser.add_argument("symbol", help="Stock ticker symbol")
     chart_parser.add_argument("--period", "-p", default="6mo", help="Period (default: 6mo)")
+    chart_parser.add_argument("--interval", "-i", default="1d", help="Interval: 1m,5m,15m,1h,1d,1wk,1mo (default: 1d)")
     chart_parser.add_argument("--type", "-t", choices=["candlestick", "line"], default="candlestick", help="Chart type")
     chart_parser.add_argument("--output", "-o", help="Output file path")
     chart_parser.add_argument("--width", type=int, default=1200, help="Width in pixels (default: 1200)")
@@ -1218,6 +1229,7 @@ def main():
         result = generate_chart(
             args.symbol,
             period=args.period,
+            interval=args.interval,
             chart_type=args.type,
             output=args.output,
             width=args.width,
