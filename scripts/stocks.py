@@ -15,7 +15,7 @@ Commands:
     quote           - Get stock quote with moving averages and signals
     search          - Search for ticker symbols by company name
     history         - Get historical OHLCV data
-    chart           - Generate PNG chart with transparent background
+    chart           - Generate PNG chart with white background (default)
     news            - Get latest news for a ticker or any search query
     recommendations - Analyst consensus and recent rating changes
     fundamentals    - Four-pillar fundamental health score (0-100)
@@ -26,7 +26,7 @@ import sys
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 
-import yfinance as yf
+import scripts.stocks as yf
 import pandas as pd
 import requests
 
@@ -334,7 +334,7 @@ def generate_chart(
     width: int = 1200,
     height: int = 800,
     ma_periods: Optional[List[int]] = None,
-    background: str = "transparent",
+    background: str = "white",
 ) -> str:
     """Generate PNG chart with configurable background."""
     import matplotlib
@@ -358,7 +358,7 @@ def generate_chart(
         bar_delta_days = 1.0
     bar_width = bar_delta_days * 0.8
     is_intraday = bar_delta_days < 1.0
-    date_fmt = mdates.DateFormatter("%H:%M") if is_intraday else date_fmt
+    date_fmt = mdates.DateFormatter("%H:%M") if is_intraday else mdates.DateFormatter("%b %d")
 
     # Color schemes based on background
     if background == "black":
@@ -1175,7 +1175,7 @@ def main():
     chart_parser.add_argument("--width", type=int, default=1200, help="Width in pixels (default: 1200)")
     chart_parser.add_argument("--height", type=int, default=800, help="Height in pixels (default: 800)")
     chart_parser.add_argument("--ma", nargs="+", type=int, default=[], help="Moving average periods to overlay (e.g. --ma 20 50 200)")
-    chart_parser.add_argument("--background", "-b", choices=["transparent", "white", "black"], default="transparent", help="Background color (default: transparent)")
+    chart_parser.add_argument("--background", "-b", choices=["transparent", "white", "black"], default="white", help="Background color (default: white)")
 
     # fundamentals command
     fund_parser = subparsers.add_parser("fundamentals", help="Four-pillar fundamental health score (0-100)")

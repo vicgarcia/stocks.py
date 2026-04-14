@@ -60,7 +60,7 @@ Additional signal data includes:
 
 ### Generate Charts
 ```bash
-# Default: 6-month candlestick, no moving averages
+# Default: 6-month candlestick, white background, no moving averages
 stocks.py chart AAPL
 
 # Line chart
@@ -69,10 +69,7 @@ stocks.py chart TSLA --type line
 # Custom period
 stocks.py chart MSFT --period 1y
 
-# White background (good for documents)
-stocks.py chart NVDA --background white
-
-# Black background (good for dark themes)
+# Black background (dark themes only)
 stocks.py chart AMD --background black
 
 # Custom dimensions
@@ -89,7 +86,7 @@ Chart features:
 - Candlestick or line chart types
 - Moving average overlays (customizable periods)
 - Volume subplot (candlestick mode)
-- Transparent, white, or black backgrounds
+- White (default), black, or transparent backgrounds — prefer white unless the output context is explicitly dark-themed
 - Auto-contrasting colors for each background
 
 ### Search for Tickers
@@ -149,8 +146,18 @@ stocks.py history MSFT --period 3mo --interval 1wk
 stocks.py history NVDA --period 5d --interval 1h
 ```
 
-Period options: `1d`, `5d`, `1mo`, `3mo`, `6mo`, `1y`, `2y`, `5y`, `max`
-Interval options: `1m`, `5m`, `15m`, `1h`, `1d`, `1wk`, `1mo`
+Period/interval compatibility — not all combinations are valid in yfinance:
+
+| Period | Valid intervals |
+|--------|----------------|
+| `1d` | `1m`, `5m`, `15m`, `1h` |
+| `5d` | `1m`, `5m`, `15m`, `1h`, `1d` |
+| `1mo` | `5m`, `15m`, `1h`, `1d` |
+| `3mo` | `1h`, `1d` |
+| `6mo`, `1y`, `2y` | `1d`, `1wk` |
+| `5y`, `max` | `1d`, `1wk`, `1mo` |
+
+Rule of thumb: use shorter intervals only with shorter periods. `1m` data is only available for the last 7 days; `1h` data for the last 730 days. Mismatched combinations return empty data without an error.
 
 Returns OHLCV data:
 - Date
@@ -301,13 +308,13 @@ stocks.py quote AMD --signals
 
 ### Generate Charts for Presentation
 ```bash
-# White background for documents/slides
-stocks.py chart AAPL --background white --width 1400 --height 900
+# Default: white background — works for most documents and slides
+stocks.py chart AAPL --width 1400 --height 900
 
-# Black background for dark-themed presentations
+# Black background for explicitly dark-themed presentations
 stocks.py chart TSLA --background black
 
-# Transparent for overlay on any background
+# Transparent for overlay use
 stocks.py chart MSFT --background transparent
 ```
 
@@ -442,7 +449,7 @@ stocks.py history QQQ --period 3mo
 
 - Use `--signals` flag for trading analysis, omit for quick price checks
 - Use `search` when you don't know the exact ticker symbol
-- Chart backgrounds: `white` for light docs, `black` for dark themes, `transparent` for overlays
-- Historical intervals: use smaller intervals (1h, 15m) only with shorter periods (5d, 1mo)
+- Chart backgrounds: default is `white` — use `black` only for explicitly dark-themed output, `transparent` for overlay use
+- Historical intervals: period and interval must be compatible — see the period/interval table in the Historical Data section. Mismatched combinations silently return empty data.
 - Moving averages require sufficient historical data (200+ days for MA 200)
 - Quote timestamps are from the last market data update, not current time
