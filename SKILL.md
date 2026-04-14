@@ -1,34 +1,34 @@
 ---
-name: stocks
+name: yfinance
 description: Get stock market data from Yahoo Finance. Use when the user asks about stock prices, quotes, company valuations, moving averages, trading signals, historical data, stock charts, latest news, analyst recommendations, or fundamental health scores. Supports any publicly traded stock via ticker symbol.
-compatibility: Requires uv or stocks.py in PATH.
+compatibility: Requires uv or yfinance.py in PATH.
 ---
 
 # Stock Market Data Tool
 
-Get stock quotes, news, analyst recommendations, fundamental health scores, historical data, and charts using the `stocks.py` CLI powered by Yahoo Finance.
+Get stock quotes, news, analyst recommendations, fundamental health scores, historical data, and charts using the `yfinance.py` CLI powered by Yahoo Finance.
 
 ## Invocation
 
-If `stocks.py` is installed in PATH:
+If `yfinance.py` is installed in PATH:
 ```bash
-stocks.py <command> [args]
+yfinance.py <command> [args]
 ```
 
 Or run directly without installing:
 ```bash
-uv run --script /path/to/skill/scripts/stocks.py <command> [args]
+uv run --script /path/to/skill/scripts/yfinance.py <command> [args]
 ```
 
-Examples in this document use `stocks.py` as shorthand for either invocation form above.
+Examples in this document use `yfinance.py` as shorthand for either invocation form above.
 
 ## Commands Reference
 
 ### Stock Quote
 ```bash
-stocks.py quote AAPL
-stocks.py quote TSLA --signals
-stocks.py quote MSFT -s
+yfinance.py quote AAPL
+yfinance.py quote TSLA --signals
+yfinance.py quote MSFT -s
 ```
 
 Returns:
@@ -45,8 +45,8 @@ Returns:
 
 ### Quote with Trading Signals
 ```bash
-stocks.py quote NVDA --signals
-stocks.py quote AMD -s
+yfinance.py quote NVDA --signals
+yfinance.py quote AMD -s
 ```
 
 Additional signal data includes:
@@ -61,28 +61,28 @@ Additional signal data includes:
 ### Generate Charts
 ```bash
 # Default: 6-month candlestick, no moving averages
-stocks.py chart AAPL
+yfinance.py chart AAPL
 
 # Line chart
-stocks.py chart TSLA --type line
+yfinance.py chart TSLA --type line
 
 # Custom period
-stocks.py chart MSFT --period 1y
+yfinance.py chart MSFT --period 1y
 
 # White background (good for documents)
-stocks.py chart NVDA --background white
+yfinance.py chart NVDA --background white
 
 # Black background (good for dark themes)
-stocks.py chart AMD --background black
+yfinance.py chart AMD --background black
 
 # Custom dimensions
-stocks.py chart GOOGL --width 1600 --height 1000
+yfinance.py chart GOOGL --width 1600 --height 1000
 
 # Custom moving averages
-stocks.py chart META --ma 9 21 50
+yfinance.py chart META --ma 9 21 50
 
 # Full options
-stocks.py chart AAPL --period 1y --type candlestick --background white --width 1400 --height 900 --ma 20 50 200 --output aapl_chart.png
+yfinance.py chart AAPL --period 1y --type candlestick --background white --width 1400 --height 900 --ma 20 50 200 --output aapl_chart.png
 ```
 
 Chart features:
@@ -94,9 +94,9 @@ Chart features:
 
 ### Search for Tickers
 ```bash
-stocks.py search "Apple"
-stocks.py search "electric vehicles" --limit 10
-stocks.py search "semiconductor" -l 8
+yfinance.py search "Apple"
+yfinance.py search "electric vehicles" --limit 10
+yfinance.py search "semiconductor" -l 8
 ```
 
 Returns:
@@ -108,17 +108,17 @@ Returns:
 ### Latest News
 ```bash
 # News for a specific ticker
-stocks.py news AAPL
-stocks.py news TSLA --count 10
+yfinance.py news AAPL
+yfinance.py news TSLA --count 10
 
 # General market/topic news
-stocks.py news "oil prices"
-stocks.py news "Federal Reserve interest rates"
-stocks.py news "semiconductor sector"
+yfinance.py news "oil prices"
+yfinance.py news "Federal Reserve interest rates"
+yfinance.py news "semiconductor sector"
 
 # Show full article summary
-stocks.py news NVDA --summary
-stocks.py news "AI chips" -s -n 3
+yfinance.py news NVDA --summary
+yfinance.py news "AI chips" -s -n 3
 ```
 
 Returns for each article:
@@ -137,16 +137,16 @@ Options:
 ### Historical Data
 ```bash
 # Default: 1 month of daily data
-stocks.py history AAPL
+yfinance.py history AAPL
 
 # 1 year of daily data
-stocks.py history TSLA --period 1y
+yfinance.py history TSLA --period 1y
 
 # 3 months of weekly data
-stocks.py history MSFT --period 3mo --interval 1wk
+yfinance.py history MSFT --period 3mo --interval 1wk
 
 # 5 days of hourly data
-stocks.py history NVDA --period 5d --interval 1h
+yfinance.py history NVDA --period 5d --interval 1h
 ```
 
 Period options: `1d`, `5d`, `1mo`, `3mo`, `6mo`, `1y`, `2y`, `5y`, `max`
@@ -160,13 +160,13 @@ Returns OHLCV data:
 ### Fundamental Health Score
 ```bash
 # Scored four-pillar report
-stocks.py fundamentals AAPL
+yfinance.py fundamentals AAPL
 
 # Raw numbers table (no scoring)
-stocks.py fundamentals GOOGL --raw
+yfinance.py fundamentals GOOGL --raw
 
 # JSON output for agent/LLM use
-stocks.py fundamentals META --json
+yfinance.py fundamentals META --json
 ```
 
 Returns a **0–100 Health Score** built from four pillars (each 0–25):
@@ -196,11 +196,11 @@ Options:
 ### Analyst Recommendations
 ```bash
 # Current consensus + recent rating changes
-stocks.py recommendations AAPL
+yfinance.py recommendations AAPL
 
 # Extended history
-stocks.py recommendations TSLA --history 6
-stocks.py recommendations NVDA -H 1
+yfinance.py recommendations TSLA --history 6
+yfinance.py recommendations NVDA -H 1
 ```
 
 Returns:
@@ -222,102 +222,102 @@ Options:
 
 ### Quick Stock Check
 ```bash
-stocks.py quote AAPL
+yfinance.py quote AAPL
 ```
 
 ### Full Company Analysis (Layered Stack)
 ```bash
 # Layer 1: Is the business fundamentally healthy? (objective, backward-looking)
-stocks.py fundamentals AAPL
+yfinance.py fundamentals AAPL
 
 # Layer 2: What do analysts think? (forward-looking consensus)
-stocks.py recommendations AAPL
+yfinance.py recommendations AAPL
 
 # Layer 3: What is happening right now? (real-time context)
-stocks.py news AAPL
+yfinance.py news AAPL
 ```
 
 ### Agent Analysis Pipeline (JSON)
 ```bash
 # All three outputs as JSON for an LLM to synthesize
-stocks.py fundamentals AAPL --json
-stocks.py recommendations AAPL
-stocks.py news AAPL --count 10
+yfinance.py fundamentals AAPL --json
+yfinance.py recommendations AAPL
+yfinance.py news AAPL --count 10
 ```
 
 ### Screen Stocks by Health Score
 ```bash
 # Compare fundamentals across multiple tickers
 for ticker in AAPL MSFT GOOGL META AMZN; do
-  stocks.py fundamentals $ticker
+  yfinance.py fundamentals $ticker
 done
 ```
 
 ### Research a Company
 ```bash
 # Find the ticker
-stocks.py search "Tesla"
+yfinance.py search "Tesla"
 
 # Get detailed quote with signals
-stocks.py quote TSLA --signals
+yfinance.py quote TSLA --signals
 
 # Check fundamental health
-stocks.py fundamentals TSLA
+yfinance.py fundamentals TSLA
 
 # View analyst consensus
-stocks.py recommendations TSLA
+yfinance.py recommendations TSLA
 
 # Latest news
-stocks.py news TSLA
+yfinance.py news TSLA
 
 # View historical performance
-stocks.py history TSLA --period 1y
+yfinance.py history TSLA --period 1y
 
 # Generate chart for analysis
-stocks.py chart TSLA --period 1y --background white
+yfinance.py chart TSLA --period 1y --background white
 ```
 
 ### Market / Topic News
 ```bash
-stocks.py news "Federal Reserve"
-stocks.py news "oil prices" --count 10
-stocks.py news "semiconductor tariffs" --summary
+yfinance.py news "Federal Reserve"
+yfinance.py news "oil prices" --count 10
+yfinance.py news "semiconductor tariffs" --summary
 ```
 
 ### Compare Stocks
 ```bash
 for ticker in AAPL MSFT GOOGL; do
-  stocks.py quote $ticker
+  yfinance.py quote $ticker
 done
 ```
 
 ### Trading Signal Analysis
 ```bash
 # Check signals for multiple stocks
-stocks.py quote AAPL --signals
-stocks.py quote NVDA --signals
-stocks.py quote AMD --signals
+yfinance.py quote AAPL --signals
+yfinance.py quote NVDA --signals
+yfinance.py quote AMD --signals
 ```
 
 ### Generate Charts for Presentation
 ```bash
 # White background for documents/slides
-stocks.py chart AAPL --background white --width 1400 --height 900
+yfinance.py chart AAPL --background white --width 1400 --height 900
 
 # Black background for dark-themed presentations
-stocks.py chart TSLA --background black
+yfinance.py chart TSLA --background black
 
 # Transparent for overlay on any background
-stocks.py chart MSFT --background transparent
+yfinance.py chart MSFT --background transparent
 ```
 
 ### Historical Analysis
 ```bash
 # Get weekly data for trend analysis
-stocks.py history SPY --period 2y --interval 1wk
+yfinance.py history SPY --period 2y --interval 1wk
 
 # Get daily data for recent moves
-stocks.py history QQQ --period 3mo
+yfinance.py history QQQ --period 3mo
 ```
 
 ## Understanding the Output

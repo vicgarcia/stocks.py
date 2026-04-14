@@ -21,12 +21,12 @@ jobs:
 
       - name: Create release zip
         run: |
-          zip -r stocks-v${{ steps.version.outputs.version }}.zip SKILL.md scripts/
+          zip -r yfinance-v${{ steps.version.outputs.version }}.zip SKILL.md scripts/
 
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}
           name: Release ${{ steps.version.outputs.version }}
-          files: stocks-v${{ steps.version.outputs.version }}.zip
+          files: yfinance-v${{ steps.version.outputs.version }}.zip
           generate_release_notes: true
