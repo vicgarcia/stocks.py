@@ -12,7 +12,8 @@
 yfinance CLI - Stock market data and charting tool
 
 Commands:
-    quote           - Get stock quote with moving averages and signals
+    quote           - Get stock quote with moving averages
+    signals         - Technical trading signals (MAs, crossovers, trend alignment)
     search          - Search for ticker symbols by company name
     history         - Get historical OHLCV data
     chart           - Generate PNG chart with white background (default)
@@ -33,8 +34,8 @@ import requests
 
 # --- Quote Command ---
 
-def get_quote(symbol: str, include_signals: bool = False) -> Dict[str, Any]:
-    """Get stock quote with moving averages and optional signals."""
+def get_quote(symbol: str) -> Dict[str, Any]:
+    """Get stock quote with moving averages."""
     ticker = yf.Ticker(symbol)
     info = ticker.info
 
@@ -94,11 +95,6 @@ def get_quote(symbol: str, include_signals: bool = False) -> Dict[str, Any]:
                 }
 
         quote["moving_averages"] = ma_data
-
-        # Detect signals if requested
-        if include_signals and len(hist) >= 200:
-            signals = detect_signals(prices, current_price)
-            quote["signals"] = signals
 
     return quote
 
@@ -163,6 +159,81 @@ def detect_signals(prices: pd.Series, current_price: float) -> Dict[str, Any]:
     return signals
 
 
+def get_signals(symbol: str) -> Dict[str, Any]:
+    """Get technical trading signals for a symbol."""
+    ticker = yf.Ticker(symbol)
+    hist = ticker.history(period="1y")
+
+    if hist.empty:
+        return {"error": f"No data found for symbol: {symbol}"}
+    if len(hist) < 200:
+        return {"error": f"Insufficient history for signals (need 200 days, got {len(hist)})"}
+
+    prices = hist["Close"]
+    current_price = round(float(prices.iloc[-1]), 2)
+
+    ma_data = {}
+    for period, name in [(20, "SMA_20"), (50, "SMA_50"), (200, "SMA_200")]:
+        ma_value = prices.rolling(window=period).mean().iloc[-1]
+        ma_data[name] = {
+            "value": round(ma_value, 2),
+            "position": "above" if current_price > ma_value else "below",
+            "distance_pct": round((current_price - ma_value) / ma_value * 100, 2),
+        }
+    for span, name in [(9, "EMA_9"), (21, "EMA_21")]:
+        ema_value = prices.ewm(span=span).mean().iloc[-1]
+        ma_data[name] = {
+            "value": round(ema_value, 2),
+            "position": "above" if current_price > ema_value else "below",
+            "distance_pct": round((current_price - ema_value) / ema_value * 100, 2),
+        }
+
+    signals = detect_signals(prices, current_price)
+
+    return {
+        "symbol": symbol.upper(),
+        "current_price": current_price,
+        "moving_averages": ma_data,
+        "trend_alignment": signals["trend_alignment"],
+        "recommendation": signals["recommendation"],
+        "detected": signals["detected"],
+    }
+
+
+def format_signals(data: Dict[str, Any], as_json: bool = False) -> str:
+    """Format signals data for display."""
+    if "error" in data:
+        return f"Error: {data['error']}"
+
+    if as_json:
+        import json
+        return json.dumps(data, indent=2)
+
+    lines = [
+        f"\n{'='*60}",
+        f"  SIGNALS  {data['symbol']}  @  ${data['current_price']:,.2f}",
+        f"{'='*60}",
+        "",
+        "  MOVING AVERAGES",
+    ]
+    for name, info in data["moving_averages"].items():
+        dist = info.get("distance_pct")
+        dist_str = f" ({dist:+.2f}%)" if dist is not None else ""
+        lines.append(f"  {name:12}  ${info['value']:>10,.2f}  [{info['position'].upper()}]{dist_str}")
+
+    lines.extend(["", "  TREND"])
+    lines.append(f"  Alignment:      {data['trend_alignment'].upper()}")
+    lines.append(f"  Recommendation: {data['recommendation'].upper()}")
+
+    if data["detected"]:
+        lines.extend(["", "  DETECTED SIGNALS"])
+        for sig in data["detected"]:
+            lines.append(f"    - {sig['type']} ({sig['strength']})")
+
+    lines.append(f"\n{'='*60}\n")
+    return "\n".join(lines)
+
+
 def format_quote(quote: Dict[str, Any]) -> str:
     """Format quote data for display."""
     if "error" in quote:
@@ -202,17 +273,6 @@ def format_quote(quote: Dict[str, Any]) -> str:
             distance = ma_info.get("distance_pct", "")
             distance_str = f" ({distance:+.2f}%)" if distance is not None and distance != "" else ""
             lines.append(f"  {ma_name:12}  ${ma_info['value']:>10,.2f}  [{position.upper()}]{distance_str}")
-
-    # Signals
-    if "signals" in quote:
-        signals = quote["signals"]
-        lines.extend(["", "  TRADING SIGNALS"])
-        lines.append(f"  Trend Alignment:  {signals.get('trend_alignment', 'mixed').upper()}")
-        lines.append(f"  Recommendation:   {signals.get('recommendation', 'wait').upper()}")
-        if signals.get("detected"):
-            lines.append("  Detected:")
-            for sig in signals["detected"]:
-                lines.append(f"    - {sig['type']} ({sig['strength']})")
 
     # Quote timestamp at bottom
     if quote.get("quote_time"):
@@ -1152,7 +1212,11 @@ def main():
     # quote command
     quote_parser = subparsers.add_parser("quote", help="Get stock quote with moving averages")
     quote_parser.add_argument("symbol", help="Stock ticker symbol (e.g., AAPL)")
-    quote_parser.add_argument("--signals", "-s", action="store_true", help="Include trading signals")
+
+    # signals command
+    signals_parser = subparsers.add_parser("signals", help="Technical trading signals (MAs, crossovers, trend alignment)")
+    signals_parser.add_argument("symbol", help="Stock ticker symbol (e.g., AAPL)")
+    signals_parser.add_argument("--json", action="store_true", dest="as_json", help="Output as JSON for agent/LLM use")
 
     # search command
     search_parser = subparsers.add_parser("search", help="Search for ticker symbols")
@@ -1201,8 +1265,12 @@ def main():
         sys.exit(1)
 
     if args.command == "quote":
-        data = get_quote(args.symbol, include_signals=args.signals)
+        data = get_quote(args.symbol)
         print(format_quote(data))
+
+    elif args.command == "signals":
+        data = get_signals(args.symbol)
+        print(format_signals(data, as_json=args.as_json))
 
     elif args.command == "search":
         data = search_ticker(args.query, limit=args.limit)
