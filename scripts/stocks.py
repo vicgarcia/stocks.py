@@ -149,7 +149,7 @@ def format_quote(quote: Dict[str, Any]) -> str:
 
 # --- Search Command ---
 
-def search_ticker(query: str, limit: int = 5) -> Dict[str, Any]:
+def search_ticker(query: str, limit: int = 20) -> Dict[str, Any]:
     """Search for ticker symbols by company name."""
     url = "https://query2.finance.yahoo.com/v1/finance/search"
     headers = {
@@ -1081,7 +1081,7 @@ def main():
     # search command
     search_parser = subparsers.add_parser("search", help="Search for ticker symbols")
     search_parser.add_argument("query", help="Company name to search")
-    search_parser.add_argument("--limit", "-l", type=int, default=5, help="Max results (default: 5)")
+    search_parser.add_argument("--limit", "-l", type=int, default=20, help="Max results (default: 20)")
 
     # history command
     history_parser = subparsers.add_parser("history", help="Get historical OHLCV data")
