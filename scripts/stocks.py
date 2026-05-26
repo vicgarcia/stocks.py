@@ -13,7 +13,6 @@ yfinance CLI - Stock market data and charting tool
 
 Commands:
     quote           - Get stock quote with moving averages
-    signals         - Technical trading signals (MAs, crossovers, trend alignment)
     search          - Search for ticker symbols by company name
     history         - Get historical OHLCV data
     chart           - Generate PNG chart with white background (default)
@@ -98,140 +97,6 @@ def get_quote(symbol: str) -> Dict[str, Any]:
 
     return quote
 
-
-def detect_signals(prices: pd.Series, current_price: float) -> Dict[str, Any]:
-    """Detect trading signals from price data."""
-    signals = {
-        "detected": [],
-        "trend_alignment": "mixed",
-        "recommendation": "wait",
-    }
-
-    sma_20 = prices.rolling(window=20).mean()
-    sma_50 = prices.rolling(window=50).mean()
-    sma_200 = prices.rolling(window=200).mean()
-    ema_9 = prices.ewm(span=9).mean()
-    ema_21 = prices.ewm(span=21).mean()
-
-    current_20 = sma_20.iloc[-1]
-    current_50 = sma_50.iloc[-1]
-    current_200 = sma_200.iloc[-1]
-    prev_50 = sma_50.iloc[-2]
-    prev_200 = sma_200.iloc[-2]
-
-    # Golden Cross / Death Cross
-    if current_50 > current_200 and prev_50 <= prev_200:
-        signals["detected"].append({"type": "golden_cross", "strength": "strong_bullish"})
-    elif current_50 < current_200 and prev_50 >= prev_200:
-        signals["detected"].append({"type": "death_cross", "strength": "strong_bearish"})
-
-    # Trend alignment
-    bullish = current_price > current_20 > current_50 > current_200
-    bearish = current_price < current_20 < current_50 < current_200
-
-    if bullish:
-        signals["trend_alignment"] = "strong_bullish"
-        signals["detected"].append({"type": "bullish_alignment", "strength": "strong_bullish"})
-    elif bearish:
-        signals["trend_alignment"] = "strong_bearish"
-        signals["detected"].append({"type": "bearish_alignment", "strength": "strong_bearish"})
-
-    # EMA crossover
-    current_ema9 = ema_9.iloc[-1]
-    current_ema21 = ema_21.iloc[-1]
-    prev_ema9 = ema_9.iloc[-2]
-    prev_ema21 = ema_21.iloc[-2]
-
-    if current_ema9 > current_ema21 and prev_ema9 <= prev_ema21:
-        signals["detected"].append({"type": "ema_bullish_crossover", "strength": "moderate_bullish"})
-    elif current_ema9 < current_ema21 and prev_ema9 >= prev_ema21:
-        signals["detected"].append({"type": "ema_bearish_crossover", "strength": "moderate_bearish"})
-
-    # Recommendation
-    bullish_count = sum(1 for s in signals["detected"] if "bullish" in s.get("strength", ""))
-    bearish_count = sum(1 for s in signals["detected"] if "bearish" in s.get("strength", ""))
-
-    if bullish_count > bearish_count:
-        signals["recommendation"] = "consider_buy"
-    elif bearish_count > bullish_count:
-        signals["recommendation"] = "avoid_or_sell"
-
-    return signals
-
-
-def get_signals(symbol: str) -> Dict[str, Any]:
-    """Get technical trading signals for a symbol."""
-    ticker = yf.Ticker(symbol)
-    hist = ticker.history(period="1y")
-
-    if hist.empty:
-        return {"error": f"No data found for symbol: {symbol}"}
-    if len(hist) < 200:
-        return {"error": f"Insufficient history for signals (need 200 days, got {len(hist)})"}
-
-    prices = hist["Close"]
-    current_price = round(float(prices.iloc[-1]), 2)
-
-    ma_data = {}
-    for period, name in [(20, "SMA_20"), (50, "SMA_50"), (200, "SMA_200")]:
-        ma_value = prices.rolling(window=period).mean().iloc[-1]
-        ma_data[name] = {
-            "value": round(ma_value, 2),
-            "position": "above" if current_price > ma_value else "below",
-            "distance_pct": round((current_price - ma_value) / ma_value * 100, 2),
-        }
-    for span, name in [(9, "EMA_9"), (21, "EMA_21")]:
-        ema_value = prices.ewm(span=span).mean().iloc[-1]
-        ma_data[name] = {
-            "value": round(ema_value, 2),
-            "position": "above" if current_price > ema_value else "below",
-            "distance_pct": round((current_price - ema_value) / ema_value * 100, 2),
-        }
-
-    signals = detect_signals(prices, current_price)
-
-    return {
-        "symbol": symbol.upper(),
-        "current_price": current_price,
-        "moving_averages": ma_data,
-        "trend_alignment": signals["trend_alignment"],
-        "recommendation": signals["recommendation"],
-        "detected": signals["detected"],
-    }
-
-
-def format_signals(data: Dict[str, Any], as_json: bool = False) -> str:
-    """Format signals data for display."""
-    if "error" in data:
-        return f"Error: {data['error']}"
-
-    if as_json:
-        import json
-        return json.dumps(data, indent=2)
-
-    lines = [
-        f"\n{'='*60}",
-        f"  SIGNALS  {data['symbol']}  @  ${data['current_price']:,.2f}",
-        f"{'='*60}",
-        "",
-        "  MOVING AVERAGES",
-    ]
-    for name, info in data["moving_averages"].items():
-        dist = info.get("distance_pct")
-        dist_str = f" ({dist:+.2f}%)" if dist is not None else ""
-        lines.append(f"  {name:12}  ${info['value']:>10,.2f}  [{info['position'].upper()}]{dist_str}")
-
-    lines.extend(["", "  TREND"])
-    lines.append(f"  Alignment:      {data['trend_alignment'].upper()}")
-    lines.append(f"  Recommendation: {data['recommendation'].upper()}")
-
-    if data["detected"]:
-        lines.extend(["", "  DETECTED SIGNALS"])
-        for sig in data["detected"]:
-            lines.append(f"    - {sig['type']} ({sig['strength']})")
-
-    lines.append(f"\n{'='*60}\n")
-    return "\n".join(lines)
 
 
 def format_quote(quote: Dict[str, Any]) -> str:
@@ -1213,11 +1078,6 @@ def main():
     quote_parser = subparsers.add_parser("quote", help="Get stock quote with moving averages")
     quote_parser.add_argument("symbol", help="Stock ticker symbol (e.g., AAPL)")
 
-    # signals command
-    signals_parser = subparsers.add_parser("signals", help="Technical trading signals (MAs, crossovers, trend alignment)")
-    signals_parser.add_argument("symbol", help="Stock ticker symbol (e.g., AAPL)")
-    signals_parser.add_argument("--json", action="store_true", dest="as_json", help="Output as JSON for agent/LLM use")
-
     # search command
     search_parser = subparsers.add_parser("search", help="Search for ticker symbols")
     search_parser.add_argument("query", help="Company name to search")
@@ -1267,10 +1127,6 @@ def main():
     if args.command == "quote":
         data = get_quote(args.symbol)
         print(format_quote(data))
-
-    elif args.command == "signals":
-        data = get_signals(args.symbol)
-        print(format_signals(data, as_json=args.as_json))
 
     elif args.command == "search":
         data = search_ticker(args.query, limit=args.limit)
