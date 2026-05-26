@@ -1,6 +1,6 @@
 ---
 name: stocks
-description: Get stock market data from Yahoo Finance. Use when the user asks about stock prices, quotes, company valuations, moving averages, trading signals, historical data, stock charts, latest news, analyst recommendations, or fundamental health scores. Supports any publicly traded stock via ticker symbol.
+description: Get stock market data from Yahoo Finance. Use when the user asks about stock prices, quotes, company valuations, moving averages, historical data, stock charts, latest news, analyst recommendations, or fundamental health scores. Supports any publicly traded stock via ticker symbol.
 compatibility: Requires uv or stocks.py in PATH.
 ---
 
@@ -27,8 +27,7 @@ Examples in this document use `stocks.py` as shorthand for either invocation for
 ### Stock Quote
 ```bash
 stocks.py quote AAPL
-stocks.py quote TSLA --signals
-stocks.py quote MSFT -s
+stocks.py quote TSLA
 ```
 
 Returns:
@@ -42,21 +41,6 @@ Returns:
 - Sector and industry
 - Moving averages (SMA 20/50/200, EMA 9/21)
 - Position relative to each MA (above/below with % distance)
-
-### Quote with Trading Signals
-```bash
-stocks.py quote NVDA --signals
-stocks.py quote AMD -s
-```
-
-Additional signal data includes:
-- Trend alignment (strong bullish/bearish/mixed)
-- Recommendation (consider_buy/avoid_or_sell/wait)
-- Detected signals:
-  - Golden Cross (50-day crosses above 200-day SMA)
-  - Death Cross (50-day crosses below 200-day SMA)
-  - Bullish/Bearish alignment (price > MA20 > MA50 > MA200)
-  - EMA crossovers (9-day EMA crosses 21-day EMA)
 
 ### Generate Charts
 ```bash
@@ -93,7 +77,7 @@ Chart features:
 ```bash
 stocks.py search "Apple"
 stocks.py search "electric vehicles" --limit 10
-stocks.py search "semiconductor" -l 8
+stocks.py search "semiconductor"
 ```
 
 Returns:
@@ -265,8 +249,8 @@ done
 # Find the ticker
 stocks.py search "Tesla"
 
-# Get detailed quote with signals
-stocks.py quote TSLA --signals
+# Get quote
+stocks.py quote TSLA
 
 # Check fundamental health
 stocks.py fundamentals TSLA
@@ -296,14 +280,6 @@ stocks.py news "semiconductor tariffs" --summary
 for ticker in AAPL MSFT GOOGL; do
   stocks.py quote $ticker
 done
-```
-
-### Trading Signal Analysis
-```bash
-# Check signals for multiple stocks
-stocks.py quote AAPL --signals
-stocks.py quote NVDA --signals
-stocks.py quote AMD --signals
 ```
 
 ### Generate Charts for Presentation
@@ -337,30 +313,6 @@ stocks.py history QQQ --period 3mo
 | SMA 200 | 200-day Simple Moving Average | Long-term trend |
 | EMA 9 | 9-day Exponential Moving Average | Fast signal |
 | EMA 21 | 21-day Exponential Moving Average | Medium signal |
-
-### Trading Signals
-| Signal | Meaning | Implication |
-|--------|---------|-------------|
-| Golden Cross | 50-day SMA crosses above 200-day | Bullish reversal |
-| Death Cross | 50-day SMA crosses below 200-day | Bearish reversal |
-| Bullish Alignment | Price > MA20 > MA50 > MA200 | Strong uptrend |
-| Bearish Alignment | Price < MA20 < MA50 < MA200 | Strong downtrend |
-| EMA Bullish Crossover | 9-day EMA crosses above 21-day | Short-term bullish |
-| EMA Bearish Crossover | 9-day EMA crosses below 21-day | Short-term bearish |
-
-### Trend Alignment
-| Value | Meaning |
-|-------|---------|
-| strong_bullish | All MAs aligned bullishly |
-| strong_bearish | All MAs aligned bearishly |
-| mixed | No clear alignment |
-
-### Recommendation
-| Value | Interpretation |
-|-------|----------------|
-| consider_buy | More bullish than bearish signals |
-| avoid_or_sell | More bearish than bullish signals |
-| wait | No clear signal dominance |
 
 ## Ticker Symbol Reference
 
@@ -447,7 +399,6 @@ stocks.py history QQQ --period 3mo
 
 ## Tips
 
-- Use `--signals` flag for trading analysis, omit for quick price checks
 - Use `search` when you don't know the exact ticker symbol
 - Chart backgrounds: default is `white` — use `black` only for explicitly dark-themed output, `transparent` for overlay use
 - Historical intervals: period and interval must be compatible — see the period/interval table in the Historical Data section. Mismatched combinations silently return empty data.

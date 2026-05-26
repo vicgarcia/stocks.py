@@ -9,7 +9,6 @@ An agent skill for stock market data and analysis, backed by a single-file CLI t
 - **Single-file executable** - Uses `uv run --script` with inline dependencies (PEP 723)
 - **Stock quotes** - Price, valuation metrics, volume, sector, and more
 - **Moving averages** - SMA (20/50/200-day) and EMA (9/21-day) with position analysis
-- **Trading signals** - Golden Cross, Death Cross, trend alignment, EMA crossovers
 - **News** - Latest articles for any ticker or free-text market topic
 - **Analyst recommendations** - Consensus breakdown and per-firm rating changes with price targets
 - **Fundamental health score** - 0–100 scored report across four pillars: Profitability, Growth, Financial Health, Cash Generation
@@ -121,12 +120,8 @@ Each metric displays a `●●●●○` dot meter. Full-score thresholds: Gross
 ### Stock Quote
 
 ```bash
-# Basic quote
 stocks.py quote AAPL
-
-# With trading signals
-stocks.py quote TSLA --signals
-stocks.py quote NVDA -s
+stocks.py quote TSLA
 ```
 
 Output includes:
@@ -137,7 +132,6 @@ Output includes:
 - Volume metrics
 - Sector and industry
 - Moving averages with position (above/below)
-- Trading signals (with `--signals` flag)
 
 ### Search Tickers
 
@@ -165,14 +159,14 @@ stocks.py history NVDA --period 5d --interval 1h
 ### Generate Charts
 
 ```bash
-# Default: 6-month candlestick, transparent background
+# Default: 6-month candlestick, white background
 stocks.py chart AAPL
-
-# White background
-stocks.py chart TSLA --background white
 
 # Black background
 stocks.py chart MSFT --background black
+
+# Transparent background
+stocks.py chart TSLA --background transparent
 
 # Line chart
 stocks.py chart NVDA --type line
@@ -211,14 +205,13 @@ stocks.py chart AMD --period 1y --width 1400 --height 900 --ma 20 50 200 --outpu
 | Option | Description |
 |--------|-------------|
 | `symbol` | Stock ticker symbol (required) |
-| `--signals`, `-s` | Include trading signals analysis |
 
 ### Search Command
 
 | Option | Default | Description |
 |--------|---------|-------------|
 | `query` | required | Company name to search |
-| `--limit`, `-l` | 5 | Maximum results to return |
+| `--limit`, `-l` | 20 | Maximum results to return |
 
 ### History Command
 
@@ -239,7 +232,7 @@ stocks.py chart AMD --period 1y --width 1400 --height 900 --ma 20 50 200 --outpu
 | `--width` | 1200 | Width in pixels |
 | `--height` | 800 | Height in pixels |
 | `--ma` | 20 50 200 | Moving average periods |
-| `--background`, `-b` | transparent | Background: transparent, white, black |
+| `--background`, `-b` | white | Background: white, black, transparent |
 
 ## Agent Analysis Stack
 
@@ -267,16 +260,6 @@ With `--json` on `fundamentals`, an agent can run all three for any ticker, comb
 | SMA 200 | 200 days | Long-term trend |
 | EMA 9 | 9 days | Fast momentum |
 | EMA 21 | 21 days | Medium momentum |
-
-## Trading Signals
-
-| Signal | Description |
-|--------|-------------|
-| Golden Cross | 50-day SMA crosses above 200-day SMA (bullish) |
-| Death Cross | 50-day SMA crosses below 200-day SMA (bearish) |
-| Bullish Alignment | Price > SMA20 > SMA50 > SMA200 |
-| Bearish Alignment | Price < SMA20 < SMA50 < SMA200 |
-| EMA Crossovers | 9-day EMA crosses 21-day EMA |
 
 ## Agent Skill
 
