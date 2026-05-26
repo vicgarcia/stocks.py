@@ -27,7 +27,7 @@ import sys
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 
-import scripts.stocks as yf
+import yfinance as yf
 import pandas as pd
 import requests
 
